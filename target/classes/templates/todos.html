@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Ultimate Todo List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --gradient-warning: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            --glass-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            background: var(--gradient-primary);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .neumorphic-card {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 8px 8px 16px rgba(0,0,0,0.1),
+                       -8px -8px 16px rgba(255,255,255,0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+        }
+
+        .neumorphic-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 12px 12px 24px rgba(0,0,0,0.15),
+                       -12px -12px 24px rgba(255,255,255,0.6);
+        }
+
+        .todo-completed {
+            background: var(--gradient-success);
+            color: white !important;
+        }
+
+        .todo-completed .todo-title {
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        .animated-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #666;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .animated-checkbox.checked {
+            background: var(--gradient-success);
+            border-color: transparent;
+        }
+
+        .priority-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .deadline-progress {
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .todo-item {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        .hover-zoom {
+            transition: transform 0.3s ease;
+        }
+
+        .hover-zoom:hover {
+            transform: scale(1.1);
+        }
+
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3 text-white fw-bold">🌟 Ultimate Todo List</h1>
+            <p class="lead text-light opacity-75">Smart Task Management System</p>
+        </div>
+
+        <!-- Add Todo Form -->
+        <div class="neumorphic-card mb-5 p-4">
+            <form th:action="@{/todos}" method="post">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-heading text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-2" 
+                                   th:field="*{title}" placeholder="Task title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-align-left text-info"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-2" 
+                                   th:field="*{description}" placeholder="Description">
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-calendar-day text-danger"></i>
+                            </span>
+                            <input type="date" class="form-control border-start-0 ps-2"
+                                   th:field="*{deadline}" 
+                                   min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100 hover-zoom">
+                            <i class="fas fa-plus-circle me-2"></i>Add
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Todo Statistics -->
+        <div class="row mb-4 g-4">
+            <div class="col-md-4">
+                <div class="neumorphic-card p-3 text-center">
+                    <h5 class="text-muted mb-1">Total Tasks</h5>
+                    <h2 class="fw-bold text-primary" th:text="${totalTasks}"></h2>
+                    <div class="progress deadline-progress mt-2">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="neumorphic-card p-3 text-center">
+                    <h5 class="text-muted mb-1">Completed</h5>
+                    <h2 class="fw-bold text-success" th:text="${completedTasks}"></h2>
+                    <div class="progress deadline-progress mt-2">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="neumorphic-card p-3 text-center">
+                    <h5 class="text-muted mb-1">Pending</h5>
+                    <h2 class="fw-bold text-warning" th:text="${pendingTasks}"></h2>
+                    <div class="progress deadline-progress mt-2">
+                        <div class="progress-fill" style="width: 30%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Todo List -->
+        <div class="row g-4 todo-list">
+            <div th:each="todo : ${todos}" class="col-12 todo-item">
+                <div class="neumorphic-card p-4" th:classappend="${todo.completed} ? 'todo-completed'">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <form th:action="@{/todos/{id}/complete(id=${todo.id})}" method="post" class="me-3">
+                                <button type="submit" class="btn p-0">
+                                    <div class="animated-checkbox" th:classappend="${todo.completed} ? 'checked'">
+                                        <i class="fas fa-check text-white" th:if="${todo.completed}"></i>
+                                    </div>
+                                </button>
+                            </form>
+                            
+                            <div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <h4 class="todo-title mb-0 fw-bold" th:text="${todo.title}"></h4>
+                                    <span class="priority-badge bg-warning ms-3" 
+                                          th:if="${todo.priority} == 'HIGH'">
+                                        ⚡ High Priority
+                                    </span>
+                                </div>
+                                <p class="text-muted mb-2" th:text="${todo.description}"></p>
+                                
+                                <div class="d-flex align-items-center">
+                                    <small class="text-muted me-3">
+                                        <i class="fas fa-calendar-plus me-1"></i>
+                                        <span th:text="${#temporals.format(todo.createdAt, 'dd MMM yyyy')}"></span>
+                                    </small>
+                                    
+                                    <small th:if="${todo.deadline} != null" 
+                                           th:classappend="${todo.deadline.isBefore(#temporals.createToday())} ? 
+                                           'text-danger' : 'text-success'">
+                                        <i class="fas fa-hourglass-half me-1"></i>
+                                        <span th:text="${#temporals.format(todo.deadline, 'dd MMM yyyy')}"></span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center">
+                            <form th:action="@{/todos/{id}/delete(id=${todo.id})}" method="post" class="me-2">
+                                <button type="submit" class="btn btn-link text-danger hover-zoom">
+                                    <i class="fas fa-trash-alt fa-lg"></i>
+                                </button>
+                            </form>
+                            <button class="btn btn-link text-primary hover-zoom">
+                                <i class="fas fa-edit fa-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-btn text-white">
+        <i class="fas fa-magic fa-lg"></i>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add hover animation
+        document.querySelectorAll('.todo-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'rotateZ(1deg)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'rotateZ(0deg)';
+            });
+        });
+
+        // Add ripple effect to buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                let ripple = document.createElement('div');
+                ripple.style.position = 'absolute';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.background = 'rgba(255,255,255,0.5)';
+                ripple.style.borderRadius = '50%';
+                ripple.style.transform = 'translate(-50%, -50%) scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                this.appendChild(ripple);
+                
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // Dynamic progress bars
+        document.querySelectorAll('.progress-fill').forEach(progress => {
+            const width = progress.style.width;
+            progress.style.width = '0';
+            setTimeout(() => {
+                progress.style.width = width;
+            }, 500);
+        });
+    </script>
+</body>
+</html>
